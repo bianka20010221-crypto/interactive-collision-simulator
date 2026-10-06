@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>BMW i3 – Opel Zafira baleseti rekonstrukció</title>
+  <style>
+    :root{color-scheme:dark;--bg:#091018;--panel:#111c27;--ink:#edf4fa;--muted:#9bb0c2;--blue:#39a9ff;--amber:#ffb547;--red:#ff5e6c}
+    *{box-sizing:border-box} body{margin:0;background:linear-gradient(145deg,#071019,#122131);color:var(--ink);font:15px/1.45 system-ui,Segoe UI,sans-serif}
+    main{max-width:1180px;margin:auto;padding:22px}.head{display:flex;justify-content:space-between;gap:18px;align-items:end;margin-bottom:16px}
+    h1{font-size:clamp(23px,3vw,38px);margin:0}.sub{color:var(--muted);max-width:720px;margin:7px 0 0}.badge{background:#243446;border:1px solid #42586c;border-radius:999px;padding:7px 12px;white-space:nowrap;color:#c9d8e4}
+    .layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px}.stage,.panel{background:rgba(12,22,32,.94);border:1px solid #25384a;border-radius:18px;box-shadow:0 18px 50px #0007}
+    .stage{padding:10px;position:relative}canvas{display:block;width:100%;aspect-ratio:16/10;border-radius:12px;background:#293a2c}
+    .quick-controls{position:sticky;top:8px;z-index:20;display:flex;justify-content:center;gap:8px;margin-bottom:8px;padding:7px;background:#081018e8;border:1px solid #30465a;border-radius:12px;backdrop-filter:blur(8px)}.quick-controls button{min-width:112px}
+    .legend{position:absolute;left:22px;top:76px;background:#081018d9;padding:8px 10px;border-radius:9px;font-size:13px}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}.panel{padding:18px}
+    h2{font-size:18px;margin:0 0 13px}.control{margin:0 0 16px}.row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:7px}.value{font-variant-numeric:tabular-nums;color:#fff;font-weight:700}
+    input[type=range]{width:100%;accent-color:var(--blue)}select{width:100%;background:#182838;color:#fff;border:1px solid #385067;border-radius:9px;padding:9px}button{border:0;border-radius:11px;padding:11px 13px;font-weight:700;cursor:pointer}.buttons{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:18px 0}.primary{background:var(--blue);color:#06121c}.secondary{background:#26394a;color:#fff}.wide{grid-column:1/-1}
+    .status{padding:13px;border-radius:12px;background:#0b151f;border:1px solid #273c4d}.status strong{display:block;margin-bottom:5px}.status span{color:var(--muted)}
+    .fact{display:flex;align-items:center;gap:9px;margin:0 0 16px;padding:11px 12px;border-radius:11px;background:#32181b;border:1px solid #743139;color:#ffd9dc;font-weight:700}.fact i{width:10px;height:10px;border-radius:50%;background:var(--red);box-shadow:0 0 0 4px #ff5e6c2b}
+    .check{display:flex;align-items:center;gap:9px;margin:2px 0 16px}.check input{width:20px;height:20px;accent-color:var(--blue)}
+    .results{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin:14px 0}.metric{padding:9px 7px;border-radius:10px;background:#0b151f;text-align:center}.metric b{display:block;font-size:16px}.metric small{display:block;color:var(--muted);font-size:10px;line-height:1.2;margin-top:3px}
+    .note,.specline{font-size:12px;color:#91a5b6;margin-top:14px}.specline{margin:-6px 0 14px;padding:8px 10px;background:#0c1721;border-radius:8px}.impact{color:#ff7b83!important;font-weight:700}.timeline{margin-top:12px;width:100%}
+    @media(max-width:850px){.layout{grid-template-columns:1fr}.head{align-items:start;flex-direction:column}.panel{order:-1}}
+  </style>
+</head>
+<body>
+<main>
+  <div class="head"><div><h1>Baleseti rekonstrukció</h1><p class="sub">BMW i3 kikanyarodása egy parkoló autók közötti kapubejáróból, és az egyenesen érkező Opel Zafira ütközése.</p></div><div class="badge">Szemléltető modell · nem szakértői bizonyíték</div></div>
+  <div class="layout">
+    <section class="stage">
+      <div class="quick-controls"><button class="primary" id="playTop">▶ Lejátszás</button><button class="secondary" id="pauseTop">Szünet</button><button class="secondary" id="resetTop">Visszaállítás</button></div>
+      <canvas id="scene" width="960" height="600" aria-label="Felülnézeti baleseti animáció"></canvas>
+      <div class="legend"><div><i class="dot" style="background:#39a9ff"></i>BMW i3</div><div><i class="dot" style="background:#ffb547"></i>Opel Zafira</div></div>
+    </section>
+    <aside class="panel">
+      <h2>Kiinduló adatok</h2>
+      <div class="fact" id="brakeFact"><i></i><span>Opel Zafira: nem fékezett</span></div>
+      <div class="control"><div class="row"><label for="bmwProfile">BMW i3 változat</label></div><select id="bmwProfile"><option value="i3_94" selected>i3 94 Ah (2017. október)</option><option value="i3_94rex">i3 94 Ah REx (2017)</option><option value="i3_120">i3 120 Ah (2019)</option></select></div>
+      <div class="control"><div class="row"><label for="zafiraProfile">Opel Zafira változat</label></div><select id="zafiraProfile"><option value="zafira_a" selected>Zafira A (2002, alapérték)</option><option value="zafira_a_opc">Zafira A OPC (2002)</option><option value="zafira_b18">Zafira B 1.8 benzines</option><option value="zafira_b19">Zafira B 1.9 CDTI</option></select></div>
+      <div class="specline" id="specData"></div>
+      <div class="control"><div class="row"><label for="opelSpeed">Opel Zafira sebessége</label><span class="value" id="opelVal">40 km/h</span></div><input id="opelSpeed" type="range" min="20" max="70" value="40"></div>
+      <div class="control"><div class="row"><label for="bmwSpeed">BMW i3 sebessége</label><span class="value" id="bmwVal">18 km/h</span></div><input id="bmwSpeed" type="range" min="5" max="30" value="18"></div>
+      <div class="control"><div class="row"><label for="initialGap">Zafira távolsága a BMW-től a kanyar kezdetekor</label><span class="value" id="initialGapVal">20,5 m</span></div><input id="initialGap" type="range" min="5" max="80" step="0.5" value="20.5"></div>
+      <div class="control"><div class="row"><label for="bmwLoad">BMW utas és csomag</label><span class="value" id="bmwLoadVal">75 kg</span></div><input id="bmwLoad" type="range" min="0" max="400" step="25" value="75"></div>
+      <div class="control"><div class="row"><label for="opelLoad">Zafira utas és csomag</label><span class="value" id="opelLoadVal">75 kg</span></div><input id="opelLoad" type="range" min="0" max="600" step="25" value="75"></div>
+      <div class="control"><div class="row"><label for="turn">A kanyar befejezettsége</label><span class="value" id="turnVal">90%</span></div><input id="turn" type="range" min="60" max="100" value="90"></div>
+      <div class="control"><div class="row"><label for="steeringMode">Zafira kormánymozdulat</label></div><select id="steeringMode"><option value="left" selected>Balra húzódik a felezőn át</option><option value="straight">Egyenesen marad a jobb sávban</option></select></div>
+      <label class="check"><input id="braking" type="checkbox"><span>Fékezési forgatókönyv bekapcsolása</span></label>
+      <div class="control"><div class="row"><label for="reaction">Reakcióidő</label><span class="value" id="reactionVal">0,7 mp</span></div><input id="reaction" type="range" min="0.3" max="2" step="0.1" value="0.7"></div>
+      <div class="control"><div class="row"><label for="decel">Fékezési lassulás</label><span class="value" id="decelVal">6,5 m/s²</span></div><input id="decel" type="range" min="3" max="9" step="0.5" value="6.5"></div>
+      <label class="check"><input id="observedFinal" type="checkbox" checked><span>Megfigyelt véghelyzet kalibrálása</span></label>
+      <div class="control"><div class="row"><label for="bmwObservedMove">BMW kis elmozdulása</label><span class="value" id="bmwObservedMoveVal">0,3 m</span></div><input id="bmwObservedMove" type="range" min="0.1" max="1.5" step="0.1" value="0.3"></div>
+      <div class="buttons"><button class="primary wide" id="play">▶ Lejátszás</button><button class="secondary" id="pause">Szünet</button><button class="secondary" id="reset">Visszaállítás</button></div>
+      <div class="control"><div class="row"><label for="viewMode">Nézet</label></div><select id="viewMode"><option value="top">Pontos felülnézet</option><option value="3d">Valódi 3D objektumnézet</option></select></div>
+      <div class="control"><div class="row"><label for="timeline">Idővonal</label><span class="value" id="timeVal">−3,0 mp</span></div><input class="timeline" id="timeline" type="range" min="0" max="1000" value="0"></div>
+      <div class="results"><div class="metric"><b id="hitResult">—</b><small>eredmény</small></div><div class="metric"><b id="impactSpeed">—</b><small>becsapódási sebesség</small></div><div class="metric"><b id="pushResult">—</b><small id="thirdLabel">BMW becsült elmozdulása</small></div><div class="metric"><b id="startGapResult">—</b><small>tényleges távolság a kanyar kezdetén</small></div></div>
+      <div class="specline" id="turnStartInfo">A kanyar kezdeti helyzetének számítása…</div>
+      <div class="specline" id="speedAdvice">A sebességi elkerülési határ számítása…</div>
+      <div class="specline" id="steeringAdvice">Az egyenes továbbhaladás vizsgálata…</div>
+      <div class="status"><strong id="phase">Ütközés előtti helyzet</strong><span id="detail">A Zafira egyenesen közelít, a BMW kihajt a kapubejáróból.</span></div>
+      <p class="note">Egyszerűsített, időalapú merevtestmodell. A fékezés reakcióidő után állandó lassulással működik; az ütközés utáni elmozdulás tömeg-, impulzus- és tapadásbecslés. Pontos szakértői rekonstrukcióhoz szükségesek a helyszín méretei, véghelyzetek, sérülésfotók és járműadatok.</p>
+    </aside>
+  </div>
+</main>
+<script>
+const canvas=document.querySelector('#scene'),ctx=canvas.getContext('2d');
+const $=s=>document.querySelector(s);
+const controls={opel:$('#opelSpeed'),bmw:$('#bmwSpeed'),initialGap:$('#initialGap'),turn:$('#turn'),steering:$('#steeringMode'),braking:$('#braking'),reaction:$('#reaction'),decel:$('#decel'),observedFinal:$('#observedFinal'),bmwObservedMove:$('#bmwObservedMove'),view:$('#viewMode'),timeline:$('#timeline'),bmwProfile:$('#bmwProfile'),zafiraProfile:$('#zafiraProfile'),bmwLoad:$('#bmwLoad'),opelLoad:$('#opelLoad')};
+const profiles={
+  i3_94:{name:'BMW i3 94 Ah',mass:1245,length:3.999,width:1.775,wheelbase:2.570,frontShare:.47,turnCircle:9.86},
+  i3_94rex:{name:'BMW i3 94 Ah REx',mass:1365,length:3.999,width:1.775,wheelbase:2.570,frontShare:.44,turnCircle:9.86},
+  i3_120:{name:'BMW i3 120 Ah',mass:1345,length:4.021,width:1.775,wheelbase:2.570,frontShare:.47,turnCircle:9.88},
+  zafira_a:{name:'Opel Zafira A',mass:1390,length:4.320,width:1.740,wheelbase:2.694,frontShare:.60,turnCircle:10.9},
+  zafira_a_opc:{name:'Opel Zafira A OPC',mass:1515,length:4.320,width:1.740,wheelbase:2.694,frontShare:.61,turnCircle:10.9},
+  zafira_b18:{name:'Opel Zafira B 1.8',mass:1518,length:4.467,width:1.801,wheelbase:2.703,frontShare:.60,turnCircle:11.5},
+  zafira_b19:{name:'Opel Zafira B 1.9 CDTI',mass:1628,length:4.467,width:1.801,wheelbase:2.703,frontShare:.61,turnCircle:11.5}
+};
+const vehicleData=()=>({bmw:profiles[controls.bmwProfile.value],opel:profiles[controls.zafiraProfile.value]});
+const SCALE=20,DURATION=15,BMW_PATH_METERS=9,PX_PER_METER=SCALE;
+// The right-side car at y=375 projects about 0.6 m into the driveway opening.
+const PARKED_CARS=[[390,55],[390,150],[390,380],[390,490],[570,70],[570,375],[570,500],[570,590]];
+let simTime=0,playing=false,last=0;
+const lerp=(a,b,t)=>a+(b-a)*t, clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+
+function rounded(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill();}
+function road(){
+  ctx.fillStyle='#35543b';ctx.fillRect(0,0,960,600);
+  ctx.fillStyle='#adb2ac';ctx.fillRect(345,0,25,600);ctx.fillRect(590,0,25,600);
+  ctx.fillStyle='#38424b';ctx.fillRect(370,0,220,600);
+  ctx.fillStyle='#59636c';ctx.fillRect(362,0,8,600);ctx.fillRect(590,0,8,600);
+  ctx.strokeStyle='#d9d4b9';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(410,0);ctx.lineTo(410,600);ctx.moveTo(550,0);ctx.lineTo(550,600);ctx.stroke();
+  ctx.strokeStyle='#d4d5ce';ctx.lineWidth=3;ctx.setLineDash([20,18]);ctx.beginPath();ctx.moveTo(480,0);ctx.lineTo(480,600);ctx.stroke();ctx.setLineDash([]);
+  // driveway and gate
+  ctx.fillStyle='#666d72';ctx.fillRect(590,225,370,120);
+  ctx.strokeStyle='#c2c7c9';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(635,220);ctx.lineTo(635,190);ctx.lineTo(950,190);ctx.stroke();
+  ctx.fillStyle='#d7dde1';ctx.font='600 13px system-ui';ctx.fillText('KAPUBEJÁRÓ',710,260);
+  // parked cars on both sides; one car overlaps the lower edge of the driveway
+  PARKED_CARS.forEach((p,i)=>car(p[0],p[1],i%2?'#707b85':'#8e989f',0,'',35,85,true));
+  ctx.fillStyle='#a8b6c2';ctx.font='13px system-ui';ctx.fillText('Az Opel haladási iránya ↑',505,585);
+}
+function car(x,y,color,angle,label,w=70,h=150,parked=false){
+  const isBMW=label==='BMW i3', isZafira=label.startsWith('ZAFIRA');
+  ctx.save();ctx.translate(x,y);ctx.rotate(angle);
+  // shadow and visible tyres
+  ctx.fillStyle='#0007';rounded(-w/2+5,-h/2+7,w,h,16);
+  ctx.fillStyle='#111';[[-1,-.28],[1,-.28],[-1,.28],[1,.28]].forEach(([sx,sy])=>ctx.fillRect(sx*(w/2+3)-4,sy*h-16,8,32));
+  // model-specific silhouette
+  ctx.fillStyle=color;ctx.beginPath();
+  if(isBMW){
+    ctx.moveTo(-w*.38,-h*.5);ctx.quadraticCurveTo(-w*.5,-h*.43,-w*.5,-h*.31);ctx.lineTo(-w*.48,h*.34);ctx.quadraticCurveTo(-w*.43,h*.5,-w*.27,h*.5);ctx.lineTo(w*.27,h*.5);ctx.quadraticCurveTo(w*.43,h*.5,w*.48,h*.34);ctx.lineTo(w*.5,-h*.31);ctx.quadraticCurveTo(w*.5,-h*.43,w*.38,-h*.5);ctx.closePath();
+  }else if(isZafira){
+    ctx.moveTo(-w*.34,-h*.5);ctx.quadraticCurveTo(-w*.48,-h*.47,-w*.5,-h*.34);ctx.lineTo(-w*.49,h*.4);ctx.quadraticCurveTo(-w*.44,h*.5,-w*.29,h*.5);ctx.lineTo(w*.29,h*.5);ctx.quadraticCurveTo(w*.44,h*.5,w*.49,h*.4);ctx.lineTo(w*.5,-h*.34);ctx.quadraticCurveTo(w*.48,-h*.47,w*.34,-h*.5);ctx.closePath();
+  }else{ctx.roundRect(-w/2,-h/2,w,h,15)}ctx.fill();
+  // glasshouse: i3 has the recognizable dark floating roof, Zafira a long minivan cabin
+  ctx.fillStyle=parked?'#2c343a':'#17242e';
+  if(isBMW){rounded(-w*.38,-h*.30,w*.76,h*.56,13);ctx.fillStyle='#0a0f13';ctx.fillRect(-w*.39,-h*.04,w*.78,h*.17);ctx.fillStyle='#3ea8db';ctx.fillRect(-w*.5,-h*.08,5,h*.23);ctx.fillRect(w*.5-5,-h*.08,5,h*.23)}
+  else if(isZafira){rounded(-w*.39,-h*.34,w*.78,h*.64,11);ctx.strokeStyle='#6e7c86';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-w*.39,-h*.04);ctx.lineTo(w*.39,-h*.04);ctx.moveTo(-w*.39,h*.16);ctx.lineTo(w*.39,h*.16);ctx.stroke()}
+  else rounded(-w*.37,-h*.27,w*.74,h*.47,9);
+  // windscreens, lamps and model accents
+  ctx.fillStyle='#a9d5e8';ctx.globalAlpha=.72;ctx.fillRect(-w*.33,-h*.32,w*.66,6);ctx.globalAlpha=1;
+  ctx.fillStyle='#f7fbdd';ctx.fillRect(-w*.34,-h*.485,w*.23,7);ctx.fillRect(w*.11,-h*.485,w*.23,7);
+  ctx.fillStyle='#ef4e55';ctx.fillRect(-w*.31,h*.46,w*.22,6);ctx.fillRect(w*.09,h*.46,w*.22,6);
+  if(isBMW){ctx.fillStyle='#111';ctx.fillRect(-w*.16,-h*.5,w*.12,8);ctx.fillRect(w*.04,-h*.5,w*.12,8)}
+  if(isZafira){ctx.fillStyle='#d7dce0';ctx.fillRect(-w*.22,-h*.505,w*.44,5)}
+  if(label){ctx.fillStyle='#fff';ctx.font='700 12px system-ui';ctx.textAlign='center';ctx.fillText(label,0,4)}ctx.restore();
+}
+function trajectory(){
+  const p=opelPathPoints();
+  ctx.save();ctx.globalAlpha=.5;ctx.lineWidth=3;ctx.setLineDash([9,8]);
+  ctx.strokeStyle='#ffb547';ctx.beginPath();ctx.moveTo(p.x[0],p.y[0]);if(controls.steering.value==='straight')ctx.lineTo(515,355);else ctx.bezierCurveTo(p.x[1],p.y[1],p.x[2],p.y[2],p.x[3],p.y[3]);ctx.stroke();
+  ctx.strokeStyle='#39a9ff';ctx.beginPath();ctx.moveTo(590,285);ctx.bezierCurveTo(535,285,445,200,445,260);ctx.lineTo(445,315);ctx.stroke();ctx.restore();ctx.setLineDash([]);
+}
+function bezier(p0,p1,p2,p3,t){const n=1-t;return n*n*n*p0+3*n*n*t*p1+3*n*t*t*p2+t*t*t*p3}
+function bezierD(p0,p1,p2,p3,t){const n=1-t;return 3*n*n*(p1-p0)+6*n*t*(p2-p1)+3*t*t*(p3-p2)}
+let pathCacheKey='',pathCache=null;
+function opelPathPoints(){const key=controls.initialGap.value;if(pathCache&&pathCacheKey===key)return pathCache;const startY=345+Number(key)*SCALE;pathCacheKey=key;pathCache={x:[515,515,505,491],y:[startY,lerp(startY,355,.36),lerp(startY,355,.76),355]};return pathCache}
+function curveLength(points){let total=0,px=points.x[0],py=points.y[0];for(let i=1;i<=160;i++){const t=i/160,x=bezier(...points.x,t),y=bezier(...points.y,t);total+=Math.hypot(x-px,y-py);px=x;py=y}return total}
+let lengthCacheKey='',lengthCache=0;
+function opelPathLength(points){const key=controls.initialGap.value+'|'+controls.steering.value;if(key===lengthCacheKey)return lengthCache;lengthCacheKey=key;lengthCache=controls.steering.value==='straight'?Math.abs(points.y[0]-355)/SCALE:curveLength(points)/SCALE;return lengthCache}
+function curveByArc(points,f){
+  const samples=[],steps=100;let total=0,prev={x:points.x[0],y:points.y[0]};samples.push({...prev,d:0,t:0});
+  for(let i=1;i<=steps;i++){const t=i/steps,p={x:bezier(...points.x,t),y:bezier(...points.y,t)};total+=Math.hypot(p.x-prev.x,p.y-prev.y);samples.push({...p,d:total,t});prev=p}
+  if(f>=1){const dx=bezierD(...points.x,1),dy=bezierD(...points.y,1),l=Math.hypot(dx,dy)||1,extra=(f-1)*total;return{x:samples[steps].x+dx/l*extra,y:samples[steps].y+dy/l*extra,a:Math.atan2(dy,dx)+Math.PI/2}}
+  const target=Math.max(0,f)*total;let i=1;while(i<samples.length&&samples[i].d<target)i++;const a=samples[i-1],b=samples[i],mix=(target-a.d)/((b.d-a.d)||1),t=lerp(a.t,b.t,mix),dx=bezierD(...points.x,t),dy=bezierD(...points.y,t);
+  return{x:lerp(a.x,b.x,mix),y:lerp(a.y,b.y,mix),a:Math.atan2(dy,dx)+Math.PI/2}
+}
+function distanceAt(kmh,t,brake){
+  const v=kmh/3.6;if(!brake)return v*t;
+  const r=Number(controls.reaction.value),a=Number(controls.decel.value);
+  if(t<=r)return v*t;const dt=t-r,stop=v/a,bt=Math.min(dt,stop);
+  return v*r+v*bt-.5*a*bt*bt;
+}
+function speedAt(kmh,t,brake){
+  const v=kmh/3.6;if(!brake||t<=Number(controls.reaction.value))return v;
+  return Math.max(0,v-Number(controls.decel.value)*(t-Number(controls.reaction.value)));
+}
+function prePositions(t){
+  const path=opelPathPoints(),pathMeters=opelPathLength(path);
+  const oq=distanceAt(Number(controls.opel.value),t,controls.braking.checked)/pathMeters;
+  const bq=(Number(controls.bmw.value)/3.6*t)/BMW_PATH_METERS;
+  const opel=controls.steering.value==='straight'?{x:515,y:lerp(path.y[0],355,oq),a:0}:curveByArc(path,oq);if(controls.steering.value!=='straight')opel.a=lerp(0,-.27,ease(clamp((oq-.65)/.35)));
+  const turnFinish=.78,u=ease(clamp(bq/turnFinish));
+  const bx=bezier(590,535,445,445,u),by=bezier(285,285,200,260,u);
+  const dx=bezierD(590,535,445,445,u),dy=bezierD(285,285,200,260,u);
+  const completed=Math.max(0,(bq-turnFinish)/(1-turnFinish));
+  const residual=(100-Number(controls.turn.value))*.9*Math.PI/180;
+  const bmw={x:bx,y:by+completed*50,a:Math.atan2(dy,dx)+Math.PI/2+residual};
+  return{opel,bmw,opelSpeed:speedAt(Number(controls.opel.value),t,controls.braking.checked),oq,bq};
+}
+function corners(v,w,h){
+  const c=Math.cos(v.a),s=Math.sin(v.a),pts=[[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2]];
+  return pts.map(([x,y])=>({x:v.x+x*c-y*s,y:v.y+x*s+y*c}));
+}
+function overlaps(a,b){
+  const v=vehicleData(),A=corners(a,v.bmw.width*SCALE,v.bmw.length*SCALE),B=corners(b,v.opel.width*SCALE,v.opel.length*SCALE),axes=[];
+  [A,B].forEach(P=>{for(let i=0;i<2;i++){const p=P[i],q=P[(i+1)%4],ex=q.x-p.x,ey=q.y-p.y,l=Math.hypot(ex,ey);axes.push({x:-ey/l,y:ex/l})}});
+  return axes.every(ax=>{const pa=A.map(p=>p.x*ax.x+p.y*ax.y),pb=B.map(p=>p.x*ax.x+p.y*ax.y);return Math.max(...pa)>=Math.min(...pb)&&Math.max(...pb)>=Math.min(...pa)});
+}
+function pointSegment(p,a,b){const dx=b.x-a.x,dy=b.y-a.y,l2=dx*dx+dy*dy,t=l2?clamp(((p.x-a.x)*dx+(p.y-a.y)*dy)/l2):0;return Math.hypot(p.x-(a.x+t*dx),p.y-(a.y+t*dy))}
+function bodyDistance(a,b){const v=vehicleData(),A=corners(a,v.bmw.width*SCALE,v.bmw.length*SCALE),B=corners(b,v.opel.width*SCALE,v.opel.length*SCALE);if(overlaps(a,b))return 0;let d=Infinity;A.forEach(p=>{for(let i=0;i<4;i++)d=Math.min(d,pointSegment(p,B[i],B[(i+1)%4]))});B.forEach(p=>{for(let i=0;i<4;i++)d=Math.min(d,pointSegment(p,A[i],A[(i+1)%4]))});return d}
+function closestApproach(){let best=Infinity,time=0;for(let t=0;t<=DURATION;t+=.025){const s=prePositions(t),d=bodyDistance(s.bmw,s.opel);if(d<best){best=d;time=t}}return{distance:best/SCALE,time}}
+function bmwDoorSillPoint(bmw){const v=vehicleData().bmw,c=Math.cos(bmw.a),s=Math.sin(bmw.a),lx=-v.width*SCALE/2,ly=-v.length*SCALE*.10;return{x:bmw.x+lx*c-ly*s,y:bmw.y+lx*s+ly*c}}
+function zafiraLeftFrontPoint(opel){const v=vehicleData().opel,c=Math.cos(opel.a),s=Math.sin(opel.a),lx=-v.width*SCALE/2,ly=-v.length*SCALE/2;return{x:opel.x+lx*c-ly*s,y:opel.y+lx*s+ly*c}}
+function findCollision(){
+  const touches=s=>overlaps(s.bmw,s.opel);
+  let prev=0;for(let t=.025;t<=DURATION;t+=.025){const s=prePositions(t);if(touches(s)){let lo=prev,hi=t;for(let i=0;i<9;i++){const mid=(lo+hi)/2,m=prePositions(mid);if(touches(m))hi=mid;else lo=mid}const hit=prePositions(hi);return{time:hi,state:hit,impactSpeed:hit.opelSpeed}}prev=t}return null;
+}
+function refreshSpeedAdvice(){
+  const oldSpeed=controls.opel.value,oldBrake=controls.braking.checked,current=Number(oldSpeed);controls.braking.checked=false;let highest=null;
+  for(let speed=5;speed<=current;speed+=.5){controls.opel.value=String(speed);if(!findCollision())highest=speed}
+  controls.opel.value=oldSpeed;controls.braking.checked=oldBrake;
+  const currentHit=findCollision();
+  if(!currentHit)$('#speedAdvice').textContent=`Az aktuális ${current.toFixed(1).replace('.',',')} km/h beállítás mellett a modell szerint elkerülhető az ütközés.`;
+  else if(highest!==null)$('#speedAdvice').textContent=`Csak sebességcsökkentéssel: legfeljebb körülbelül ${highest.toFixed(1).replace('.',',')} km/h-nál nincs karosszéria-érintkezés.`;
+  else $('#speedAdvice').textContent='Az 5–'+current.toFixed(0)+' km/h tartományban a pályák továbbra is találkoznak; az időzítést vagy az irányt is módosítani kell.';
+}
+function refreshSteeringAdvice(){
+  const old=controls.steering.value;controls.steering.value='straight';const hit=findCollision();
+  if(hit)$('#steeringAdvice').textContent=`Egyenes kormányállással is ütközés történne, körülbelül ${(hit.impactSpeed*3.6).toFixed(1).replace('.',',')} km/h becsapódási sebességgel.`;
+  else{const near=closestApproach();$('#steeringAdvice').textContent=`Egyenes kormányállással elkerülhető: a legkisebb karosszériatávolság körülbelül ${near.distance.toFixed(1).replace('.',',')} méter.`}
+  controls.steering.value=old;
+}
+function postPositions(t,hit){
+  const dt=Math.max(0,t-hit.time),base=hit.state;
+  const v=vehicleData(),mZ=v.opel.mass+Number(controls.opelLoad.value),mB=v.bmw.mass+Number(controls.bmwLoad.value),e=.12,mu=.68,g=9.81;
+  const contact=bmwDoorSillPoint(base.bmw);
+  let nx=contact.x-base.opel.x,ny=contact.y-base.opel.y,nl=Math.hypot(nx,ny)||1;nx/=nl;ny/=nl;
+  const heading=a=>({x:Math.sin(a),y:-Math.cos(a)}),ho=heading(base.opel.a),hb=heading(base.bmw.a);
+  const vo={x:ho.x*hit.impactSpeed,y:ho.y*hit.impactSpeed},vb0=Number(controls.bmw.value)/3.6,vb={x:hb.x*vb0,y:hb.y*vb0};
+  const rO={x:(contact.x-base.opel.x)/SCALE,y:(contact.y-base.opel.y)/SCALE},rB={x:(contact.x-base.bmw.x)/SCALE,y:(contact.y-base.bmw.y)/SCALE};
+  const cross=(r,x,y)=>r.x*y-r.y*x,IZ=mZ*(v.opel.length**2+v.opel.width**2)/12,IB=mB*(v.bmw.length**2+v.bmw.width**2)/12;
+  const closing=Math.max(0,(vo.x-vb.x)*nx+(vo.y-vb.y)*ny),den=1/mZ+1/mB+cross(rO,nx,ny)**2/IZ+cross(rB,nx,ny)**2/IB;
+  const J=(1+e)*closing/den;
+  const vz={x:vo.x-J*nx/mZ,y:vo.y-J*ny/mZ},vi={x:vb.x+J*nx/mB,y:vb.y+J*ny/mB};
+  const move=(vel,friction)=>{const speed=Math.hypot(vel.x,vel.y),tt=Math.min(dt,speed/(friction*g)),d=speed*tt-.5*friction*g*tt*tt;return{x:vel.x/(speed||1)*d,y:vel.y/(speed||1)*d,d,stop:speed*speed/(2*friction*g)}};
+  const mz=move(vz,.62),mb=move(vi,mu),omegaB=cross(rB,J*nx,J*ny)/IB,omegaZ=-cross(rO,J*nx,J*ny)/IZ,calibrated=controls.observedFinal.checked;
+  const bReference=Number(controls.bmwObservedMove.value),vRef=40/3.6,vStatic=5/3.6,energyScale=Math.max(0,(hit.impactSpeed**2-vStatic**2)/(vRef**2-vStatic**2)),bCap=bReference*energyScale;
+  const bScale=calibrated?Math.min(1,bCap/(mb.d||1)):1,zCap=.45*Math.max(.25,energyScale),zScale=calibrated?Math.min(1,zCap/(mz.d||1)):1,sep=Math.min(calibrated?7:14,2+dt*(calibrated?14:30));
+  const rot=(omega,limit)=>clamp(omega*(1-Math.exp(-3.2*dt))/3.2,-limit,limit),bRot=rot(omegaB,calibrated?.10:.38),zRot=rot(omegaZ,calibrated?.08:.30);
+  const bmw={x:base.bmw.x+mb.x*bScale*PX_PER_METER+nx*sep,y:base.bmw.y+mb.y*bScale*PX_PER_METER+ny*sep,a:base.bmw.a+bRot};
+  const opel={x:base.opel.x+mz.x*zScale*PX_PER_METER-nx*sep*.5,y:base.opel.y+mz.y*zScale*PX_PER_METER-ny*sep*.5,a:base.opel.a+zRot-(calibrated?Math.min(.06,dt*.07):0)};
+  return{bmw,opel,push:calibrated?Math.min(bCap,mb.stop):mb.stop,impulse:J};
+}
+function scenarioAt(t,hit){if(hit&&t>=hit.time)return{...postPositions(t,hit),after:true};return{...prePositions(t),after:false}}
+function project3(p){const X=p.x-480,Z=p.z-300,cp=Math.cos(-.65),sp=Math.sin(-.65),yr=p.y*cp-Z*sp,zr=p.y*sp+Z*cp,d=900,scale=d/(d+zr);return{x:480+X*scale,y:330-yr*scale,depth:zr}}
+function shade(hex,f){const n=parseInt(hex.slice(1),16),r=Math.max(0,Math.min(255,((n>>16)&255)*f)),g=Math.max(0,Math.min(255,((n>>8)&255)*f)),b=Math.max(0,Math.min(255,(n&255)*f));return`rgb(${r|0},${g|0},${b|0})`}
+function poly3(points,fill,stroke='#17212a'){const p=points.map(project3);ctx.beginPath();ctx.moveTo(p[0].x,p[0].y);for(let i=1;i<p.length;i++)ctx.lineTo(p[i].x,p[i].y);ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke()}return p.reduce((a,v)=>a+v.depth,0)/p.length}
+function addPrism(faces,cx,cz,a,w,l,y0,y1,color){
+  const c=Math.cos(a),s=Math.sin(a),local=[[-w/2,-l/2],[w/2,-l/2],[w/2,l/2],[-w/2,l/2]],world=(q,y)=>({x:cx+q[0]*c-q[1]*s,y,z:cz+q[0]*s+q[1]*c}),lo=local.map(q=>world(q,y0)),hi=local.map(q=>world(q,y1));
+  faces.push({p:hi,color:shade(color,1.08)});for(let i=0;i<4;i++)faces.push({p:[lo[i],lo[(i+1)%4],hi[(i+1)%4],hi[i]],color:shade(color,i%2?.72:.84)});
+}
+function addVehicle3D(faces,v,color,label,profile,parked=false){
+  const w=profile.width*SCALE,l=profile.length*SCALE,h=(label==='BMW i3'?1.58:(label.startsWith('ZAFIRA')?1.68:1.5))*SCALE;
+  addPrism(faces,v.x,v.y,v.a,w,l,2,h*.42,color);const frontShift=-l*.03;addPrism(faces,v.x-Math.sin(v.a)*frontShift,v.y+Math.cos(v.a)*frontShift,v.a,w*.74,l*.53,h*.42,h*(parked?.78:.88),parked?'#35414b':'#192a36');
+  const wheelW=w*.12,wheelL=l*.20;[[-1,-.27],[1,-.27],[-1,.28],[1,.28]].forEach(([sx,sz])=>{const lx=sx*(w/2+2),lz=sz*l,c=Math.cos(v.a),s=Math.sin(v.a);addPrism(faces,v.x+lx*c-lz*s,v.y+lx*s+lz*c,v.a,wheelW,wheelL,1,h*.22,'#15191c')});
+}
+function draw3DScene(s,hit,v){
+  const sky=ctx.createLinearGradient(0,0,0,600);sky.addColorStop(0,'#b8d7e8');sky.addColorStop(.55,'#617b64');sky.addColorStop(1,'#263e2c');ctx.fillStyle=sky;ctx.fillRect(0,0,960,600);
+  poly3([{x:0,y:0,z:-80},{x:960,y:0,z:-80},{x:960,y:0,z:680},{x:0,y:0,z:680}],'#35543b',null);
+  poly3([{x:370,y:.2,z:0},{x:590,y:.2,z:0},{x:590,y:.2,z:600},{x:370,y:.2,z:600}],'#3b434a','#2a3035');
+  poly3([{x:345,y:1,z:0},{x:370,y:1,z:0},{x:370,y:1,z:600},{x:345,y:1,z:600}],'#aeb3ae',null);poly3([{x:590,y:1,z:0},{x:615,y:1,z:0},{x:615,y:1,z:600},{x:590,y:1,z:600}],'#aeb3ae',null);
+  poly3([{x:590,y:.4,z:225},{x:960,y:.4,z:225},{x:960,y:.4,z:345},{x:590,y:.4,z:345}],'#686f74',null);
+  for(let z=0;z<600;z+=48)poly3([{x:492,y:1,z},{x:498,y:1,z},{x:498,y:1,z:z+26},{x:492,y:1,z:z+26}],'#e5e2d0',null);
+  const faces=[],generic={width:1.75,length:4.25};PARKED_CARS.forEach((p,i)=>addVehicle3D(faces,{x:p[0],y:p[1],a:0},i%2?'#707b85':'#8e989f','parked',generic,true));
+  addVehicle3D(faces,s.bmw,'#e7edf1','BMW i3',v.bmw);addVehicle3D(faces,s.opel,'#b9c1c8','ZAFIRA A',v.opel);
+  faces.forEach(f=>f.depth=f.p.reduce((a,p)=>a+project3(p).depth,0)/f.p.length);faces.sort((a,b)=>b.depth-a.depth);faces.forEach(f=>poly3(f.p,f.color));
+  const liveSpeed=s.after?'ütközés után':`${speedAt(Number(controls.opel.value),simTime,controls.braking.checked)*3.6|0} km/h`;
+  [[s.bmw,'BMW i3'],[s.opel,`Zafira · ${liveSpeed}`]].forEach(([o,label])=>{const p=project3({x:o.x,y:42,z:o.y});ctx.fillStyle='#081018cc';ctx.fillRect(p.x-48,p.y-12,96,18);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.font='600 11px system-ui';ctx.fillText(label,p.x,p.y+1)});
+  if(hit&&simTime>=hit.time-.15){const cp=bmwDoorSillPoint(s.bmw),zp=zafiraLeftFrontPoint(s.opel),a=project3({x:cp.x,y:32,z:cp.y}),b=project3({x:zp.x,y:32,z:zp.y});ctx.fillStyle='#ff5e6c';ctx.beginPath();ctx.arc(a.x,a.y,7,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#ffb547';ctx.lineWidth=3;ctx.beginPath();ctx.arc(b.x,b.y,9,0,Math.PI*2);ctx.stroke()}
+}
+function draw(){
+  const hit=findCollision(),s=scenarioAt(simTime,hit),v=vehicleData();ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,960,600);if(controls.view.value==='3d')draw3DScene(s,hit,v);else{ctx.save();road();trajectory();
+  car(s.bmw.x,s.bmw.y,'#e7edf1',s.bmw.a,'BMW i3',v.bmw.width*SCALE,v.bmw.length*SCALE);car(s.opel.x,s.opel.y,'#b9c1c8',s.opel.a,'ZAFIRA A',v.opel.width*SCALE,v.opel.length*SCALE);
+  const liveSpeed=s.after?'ütközés után':`${Math.round(speedAt(Number(controls.opel.value),simTime,controls.braking.checked)*3.6)} km/h`;ctx.fillStyle='#081018dd';ctx.fillRect(s.opel.x+42,s.opel.y-12,92,22);ctx.fillStyle='#fff';ctx.textAlign='left';ctx.font='600 11px system-ui';ctx.fillText(liveSpeed,s.opel.x+49,s.opel.y+3);
+  if(hit&&simTime>=hit.time-.15){const cp=bmwDoorSillPoint(s.bmw),zp=zafiraLeftFrontPoint(s.opel);ctx.strokeStyle='#ffb547';ctx.lineWidth=3;ctx.beginPath();ctx.arc(zp.x,zp.y,9,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#ff5e6c';ctx.beginPath();ctx.arc(cp.x,cp.y,7,0,Math.PI*2);ctx.fill();ctx.fillStyle='#081018dd';ctx.fillRect(cp.x+10,cp.y-22,192,22);ctx.fillStyle='#fff';ctx.font='600 11px system-ui';ctx.fillText('bal első sarok → alsó ajtókeret',cp.x+17,cp.y-7)}
+  if(hit&&Math.abs(simTime-hit.time)<.10){const x=(hit.state.bmw.x+hit.state.opel.x)/2,y=(hit.state.bmw.y+hit.state.opel.y)/2;ctx.save();ctx.translate(x,y);ctx.strokeStyle='#ff5e6c';ctx.lineWidth=5;for(let i=0;i<8;i++){ctx.rotate(Math.PI/4);ctx.beginPath();ctx.moveTo(8,0);ctx.lineTo(25,0);ctx.stroke()}ctx.restore()}ctx.restore()}
+  $('#timeVal').textContent='+'+simTime.toFixed(1).replace('.',',')+' mp';
+  const initial=prePositions(0),startGap=bodyDistance(initial.bmw,initial.opel)/SCALE;$('#startGapResult').textContent=startGap.toFixed(1).replace('.',',')+' m';
+  if(hit){const post=postPositions(Math.max(hit.time,simTime),hit);$('#hitResult').textContent='Ütközés';$('#impactSpeed').textContent=(hit.impactSpeed*3.6).toFixed(1).replace('.',',')+' km/h';$('#pushResult').textContent=post.push.toFixed(1).replace('.',',')+' m';$('#thirdLabel').textContent='BMW becsült elmozdulása'}
+  else{const near=closestApproach();$('#hitResult').textContent='Elkerülve';$('#impactSpeed').textContent='0 km/h';$('#pushResult').textContent=near.distance.toFixed(1).replace('.',',')+' m';$('#thirdLabel').textContent='legkisebb távolság'}
+  const arrival=hit?hit.time:curveLength(opelPathPoints())/SCALE/(Number(controls.opel.value)/3.6);$('#turnStartInfo').textContent=`A BMW kanyarjának kezdetekor a karosszériák között ${startGap.toFixed(1).replace('.',',')} m van. ${hit?'A számított első érintkezés':'A Zafira ütközési pontig tartó menetideje fékezés nélkül'} körülbelül ${arrival.toFixed(2).replace('.',',')} másodperc.`;
+  if(hit&&simTime>=hit.time-.06&&simTime<=hit.time+.08){$('#phase').textContent='Első érintkezés';$('#detail').className='impact';$('#detail').textContent='A Zafira bal első sarka a BMW vezetőoldali alsó ajtókereténél és küszöbénél érintkezik; a pályakövetés itt megszűnik.'}
+  else if(hit&&simTime>hit.time+.08){$('#phase').textContent='Ütközés utáni mozgás';$('#detail').className='';$('#detail').textContent='A járműveket a becsült impulzus és a tapadási lassulás mozgatja tovább.'}
+  else{$('#phase').textContent=hit?'Ütközés előtti mozgás':'A beállítással nincs ütközés';$('#detail').className='';$('#detail').textContent=controls.braking.checked?'A Zafira a reakcióidő után lassul.':'A Zafira változatlan sebességgel halad és a felezővonal felé tér.'}
+}
+function frame(ts){if(playing){if(!last)last=ts;simTime+=(ts-last)/1000;last=ts;if(simTime>=DURATION){simTime=DURATION;playing=false}controls.timeline.value=Math.round(simTime/DURATION*1000);draw()}requestAnimationFrame(frame)}
+let analysisTimer=0;
+function scheduleAnalysis(){clearTimeout(analysisTimer);analysisTimer=setTimeout(()=>{refreshSpeedAdvice();refreshSteeringAdvice();draw()},180)}
+Object.values(controls).forEach(el=>el.addEventListener('input',()=>{if(el===controls.timeline){simTime=Number(el.value)/1000*DURATION;playing=false}else if(el===controls.view){playing=false}else{simTime=0;controls.timeline.value=0;scheduleAnalysis()}updateLabels();draw()}));
+function updateLabels(){
+  $('#opelVal').textContent=controls.opel.value+' km/h';$('#bmwVal').textContent=controls.bmw.value+' km/h';$('#turnVal').textContent=controls.turn.value+'%';
+  $('#initialGapVal').textContent=Number(controls.initialGap.value).toFixed(1).replace('.',',')+' m';
+  $('#bmwLoadVal').textContent=controls.bmwLoad.value+' kg';$('#opelLoadVal').textContent=controls.opelLoad.value+' kg';
+  $('#reactionVal').textContent=Number(controls.reaction.value).toFixed(1).replace('.',',')+' mp';$('#decelVal').textContent=Number(controls.decel.value).toFixed(1).replace('.',',')+' m/s²';
+  $('#bmwObservedMoveVal').textContent=Number(controls.bmwObservedMove.value).toFixed(1).replace('.',',')+' m';
+  const v=vehicleData(),fmt=n=>n.toFixed(3).replace('.',',');$('#specData').textContent=`BMW: ${fmt(v.bmw.length)} × ${fmt(v.bmw.width)} m, ${v.bmw.mass+Number(controls.bmwLoad.value)} kg · Zafira: ${fmt(v.opel.length)} × ${fmt(v.opel.width)} m, ${v.opel.mass+Number(controls.opelLoad.value)} kg`;
+  const fact=$('#brakeFact');fact.querySelector('span').textContent=controls.braking.checked?'Opel Zafira: fékezési vizsgálat':'Opel Zafira: nem fékezett';fact.style.background=controls.braking.checked?'#163024':'#32181b';fact.style.borderColor=controls.braking.checked?'#2f7052':'#743139';
+}
+const playSimulation=()=>{if(simTime>=DURATION)simTime=0;playing=true;last=0},pauseSimulation=()=>playing=false,resetSimulation=()=>{playing=false;simTime=0;controls.timeline.value=0;draw()};
+$('#play').onclick=playSimulation;$('#playTop').onclick=playSimulation;$('#pause').onclick=pauseSimulation;$('#pauseTop').onclick=pauseSimulation;$('#reset').onclick=resetSimulation;$('#resetTop').onclick=resetSimulation;
+updateLabels();refreshSpeedAdvice();refreshSteeringAdvice();draw();requestAnimationFrame(frame);
+</script>
+</body>
+</html>
