@@ -6,6 +6,10 @@ Paramétervezérelt, böngészőben futó 2D/3D szemléltető szimulátor járm�
 
 > **Fontos:** oktatási és szemléltetési célú modell, nem igazságügyi szakértői bizonyíték.
 
+## English summary
+
+A parameter-driven browser simulation for illustrating vehicle motion, braking scenarios and first body contact. The shared 2D/3D state uses SAT-based collision detection and a headless smoke test; it is an educational visualization, not forensic evidence.
+
 ## Fő funkciók
 
 - állítható sebesség, kiindulási távolság, reakcióidő és lassulás;
