@@ -1,5 +1,7 @@
 # Interactive Collision Scenario Simulator
 
+**[Élő szimulátor megnyitása](https://bianka20010221-crypto.github.io/interactive-collision-simulator/)**
+
 Paramétervezérelt, böngészőben futó 2D/3D szemléltető szimulátor járműmozgások, fékezési forgatókönyvek és első karosszéria-érintkezés vizsgálatához.
 
 > **Fontos:** oktatási és szemléltetési célú modell, nem igazságügyi szakértői bizonyíték.
@@ -30,4 +32,3 @@ A teszt ellenőrzi többek között, hogy a sebesség és távolság vezérlők 
 ## Technológia
 
 HTML · CSS · JavaScript · Canvas 2D · paraméteres geometria · SAT collision detection
-
